@@ -1,0 +1,8 @@
+atlassian-ide-plugin.xml
+scalarm-cloudify.iml
+.idea/
+
+ScalarmExperimentManager/ScalarmExperimentManager-service.properties
+ScalarmStorageManager/ScalarmStorageManager-service.properties
+ScalarmInformationService/ScalarmInformationService-service.properties
+ScalarmSimulationManager/ScalarmSimulationManager-service.properties
