@@ -13,6 +13,26 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
+def queryPuma = "Args.0.re=puma.*unix.*scalarm_experiment_manager.sock.*"
+def queryNginx = "Args.0.re=nginx.*master process nginx.*"
+
+def pumaProcessIsRunning = {
+    !ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=puma.*unix.*scalarm_experiment_manager.sock.*").isEmpty()
+}
+
+def httpsPortIsOccupied = {
+    ServiceUtils.isPortOccupied(443)
+}
+
+def isUrlAvailable = { url ->
+    def output = ["sh", "-c", "curl -k -I ${url} | head -1 | cut -d' ' -f2"].execute().text
+    output.isInteger() && output.toInteger() in [200, 301]
+}
+
+def scalarmLoginPageIsAvailable = {
+    isUrlAvailable("https://localhost/login")
+}
+
 service {
 	
 	name "ScalarmExperimentManager"
@@ -30,22 +50,28 @@ service {
         shutdown "ScalarmExperimentManager_shutdown.groovy"
 
         startDetection {
-//             ServiceUtils.isPortOccupied(3005) // puma via http
-//             ServiceUtils.isPortOccupied(3001) // nginx
-            // todo: przenieść do osobnego skryptu, żeby było można zmieniać ręcznie
-            // todo: wykrywać, czy działa proces -> jak jest puma, to raczej działa, bo najpierw jest rake
-            // później można wykrywać, czy istnieje plik socketu
-        }
-        locator {
-//             ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=puma.*tcp.*3005")
-            ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=puma.*unix.*scalarm_experiment_manager.sock.*")
+            println "SD - puma: " + pumaProcessIsRunning()
+            println "SD - 443 port: " + httpsPortIsOccupied()
+            println "SD - url avail: " + scalarmLoginPageIsAvailable()
+        
+            pumaProcessIsRunning() && httpsPortIsOccupied() && scalarmLoginPageIsAvailable()
         }
         stopDetection {
-//             ServiceUtils.isPortFree(3005) // puma via http
-//             ServiceUtils.isPortOccupied(3001) // nginx
-            // todo: jak w start detection: wykrywać czy proces został zamknięty lub nie ma sock
+            println "SD - puma: " + pumaProcessIsRunning()
+            println "SD - 443 port: " + httpsPortIsOccupied()
+            println "SD - url avail: " + scalarmLoginPageIsAvailable()
+            
+            !pumaProcessIsRunning() || !httpsPortIsOccupied() || !scalarmLoginPageIsAvailable()
         }
         
+        locator {
+            [queryNginx, queryPuma].inject([]) { collectedPids, query ->
+                collectedPids += ServiceUtils.ProcessUtils.getPidsWithQuery(query)
+            }
+        }
+    }
+}
+
         
         
 //		startDetection {
@@ -70,7 +96,6 @@ service {
 //				if (null!=mongo) mongo.close()
 //			}
 //		}
-	}
 	
 //	userInterface {
 //		metricGroups = ([
@@ -99,4 +124,4 @@ service {
 //		port = 30001
 //		protocolDescription ="HTTP"
 //	}
-}
+

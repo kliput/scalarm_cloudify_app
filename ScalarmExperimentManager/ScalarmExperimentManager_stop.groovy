@@ -11,6 +11,14 @@ serviceDir = "${installDir}/${config.serviceName}"
 
 builder = new AntBuilder()
 
+isHost = "localhost"
+isPort = "11300"
+
+enHost = "localhost" // this host
+enPort = "443"
+
+"sudo killall nginx".execute()
+
 builder.exec(executable: "curl",
         outputproperty: "cmdOut1",
         failonerror: "true") {
