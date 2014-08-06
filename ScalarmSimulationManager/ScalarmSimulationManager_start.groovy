@@ -11,20 +11,23 @@ serviceDir = "${installDir}/${config.serviceName}"
 
 builder = new AntBuilder()
 
-def simulation_manager_command = "nohup ruby simulation_manager.rb >sim.log 2>&1 </dev/null & echo $!"
+def getSimulationManagerPids = {
+    ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.eq=ruby,Args.1.eq=simulation_manager.rb")
+}
 
-builder.exec(outputproperty: "cmdOutSim",
-        errorproperty: "cmdErrSim",
+getSimulationManagerPids().collect { pid ->
+    "kill -9 ${pid}".execute().waitFor()
+}
+
+builder.exec(executable: "sh",
         dir: serviceDir,
-        executable: "bash",
+        outputproperty: "cmdOutSim",
+        errorproperty: "cmdErrSim",
         failonerror: "true",
-        inputstring: simulation_manager_command
-)
+) {
+    arg(value: "-c")
+    arg(value: "nohup ruby simulation_manager.rb >sim.log 2>&1 </dev/null & echo \$!")
+}
 
 def pid = builder.project.properties.cmdOutSim
-
 println "PID: ${pid}"
-
-new File("${serviceDir}/sim.pid").write(pid)
-
-// todo: check if process with given PID is running

@@ -9,5 +9,10 @@ instanceID = serviceContext.getInstanceId()
 installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceID
 serviceDir = "${installDir}/${config.serviceName}"
 
-"kill `${serviceDir}/sim.pid`".execute()
+def getSimulationManagerPids = {
+    ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.eq=ruby,Args.1.eq=simulation_manager.rb")
+}
 
+getSimulationManagerPids().collect { pid ->
+    "kill -9 ${pid}".execute().waitFor()
+}

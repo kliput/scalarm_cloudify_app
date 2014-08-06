@@ -13,6 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
+def getSimulationManagerPids = {
+    ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.eq=ruby,Args.1.eq=simulation_manager.rb")
+}
+
 service {
 	
 	name "ScalarmSimulationManager"
@@ -33,15 +37,17 @@ service {
         shutdown "ScalarmSimulationManager_shutdown.groovy"
 
         startDetection {
-            ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.eq=ruby,Args.0.eq=simulation_manager.rb").size() > 0
+            !getSimulationManagerPids().isEmpty()
         }
         locator {
-            ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.eq=ruby,Args.0.eq=simulation_manager.rb")
+            getSimulationManagerPids()
         }
         stopDetection {
-            ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.eq=ruby,Args.0.eq=simulation_manager.rb").size() == 0
+            getSimulationManagerPids().isEmpty()
         }
-        
+    }
+}
+
 //		startDetection {
 //            information_service_port = 11300 // context.attributes.thisInstance["port"]
 //			ServiceUtils.isPortOccupied(information_service_port)
@@ -64,7 +70,7 @@ service {
 //				if (null!=mongo) mongo.close()
 //			}
 //		}
-	}
+	
 	
 //	userInterface {
 //		metricGroups = ([
@@ -93,4 +99,3 @@ service {
 //		port = 30001
 //		protocolDescription ="HTTP"
 //	}
-}
