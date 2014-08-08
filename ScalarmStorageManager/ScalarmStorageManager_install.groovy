@@ -9,6 +9,7 @@ instanceID = serviceContext.getInstanceId()
 installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceID
 serviceDir = "${installDir}/${config.serviceName}"
 serviceConfigDir = "${serviceDir}/config"
+nginxDir = "${installDir}/nginx-storage"
 
 println "scalarm-sm-install.groovy: starting ..."
 
@@ -17,6 +18,15 @@ println "ls: ${"ls".execute().text}"
 println "pwd: ${"pwd".execute().text}"
 
 builder = new AntBuilder()
+
+if (!isNginxPresent()) installNginx()
+
+builder.mkdir(dir: nginxDir)
+builder.mkdir(dir: "${nginxDir}/logs")
+builder.copy(todir: nginxDir) {
+    fileset(dir: "nginx-storage")
+}
+
 
 // download Simulation Manager's code
 builder.sequential {
@@ -66,3 +76,22 @@ builder.exec(outputproperty:"cmdOut2",
 }
 
 println "stdout2:        ${builder.project.properties.cmdOut2}"
+
+boolean isNginxPresent() {
+    def p = ['sh', '-c', 'nginx -v'].execute()
+    p.waitForOrKill(1000*5)
+    p.exitValue() == 0
+}
+
+void installNginx() {
+    def command = [
+        "add-apt-repository -y ppa:nginx/stable",
+        "apt-get update",
+        "apt-get install -y nginx"
+    ].join("; ")
+    
+    def proc = ['sudo', 'sh', '-c', command].execute()
+    proc.waitForOrKill(10*60*1000)
+    println "nginx installation output: ${proc.text}"
+}
+

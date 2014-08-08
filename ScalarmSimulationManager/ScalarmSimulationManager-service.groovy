@@ -21,10 +21,9 @@ service {
 	
 	name "ScalarmSimulationManager"
 	type "APP_SERVER"
-	numInstances 1
-	
-	//minAllowedInstances 1 // TODO: 0
-    //maxAllowedInstances 2 // TOOD: inf?
+    elastic true
+    numInstances 1
+    maxAllowedInstances 1
 	
 	compute {
 		template "SMALL_LINUX"

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
+//TODO: all scripts need strong refactoring
 application {
     name="Scalarm"
 

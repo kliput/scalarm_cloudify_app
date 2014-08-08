@@ -13,6 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
+
+def queries = [
+    'mongos': "Args.0.re=./mongos,Args.1.re=--bind_ip",
+    'mongod_shard': "Args.0.re=./mongod,Args.1.re=--shardsvr",
+    'mongod_config': "Args.0.re=./mongod,Args.1.re=--configsvr",
+    'thin': "Args.0.re=thin server.*scalarm_storage_manager.sock.*",
+    'nginx': "Args.0.re=nginx.*master process nginx.*nginx-storage.*"
+]
+
+def ports = [
+    'mongos': 27017,
+    'mongod_shard': 30000,
+    'mongod_config': 28000,
+    'nginx': 20001
+]
+
 service {
 	
 	name "ScalarmStorageManager"
@@ -29,24 +45,22 @@ service {
 		stop "ScalarmStorageManager_stop.groovy"
         shutdown "ScalarmStorageManager_shutdown.groovy"
         startDetection {
-            ServiceUtils.arePortsOccupied([27017, 28000, 30000, 20000])
+            ServiceUtils.arePortsOccupied(new ArrayList(ports.values())) &&
+                !ServiceUtils.ProcessUtils.getPidsWithQuery(queries['thin']).isEmpty()
         }
         locator {
-            ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=./mongos,Args.1.re=--bind_ip") +
-                ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=./mongod,Args.1.re=--shardsvr") +
-                ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=./mongod,Args.1.re=--configsvr") +
-                ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=thin server.*20000.*")
-        }
-        stopDetection {
-            [27017, 28000, 30000, 20000].any { port ->
-                ServiceUtils.isPortFree(port)
+            queries.values().inject([]) { collectedPids, query ->
+                collectedPids += ServiceUtils.ProcessUtils.getPidsWithQuery(query)
             }
         }
-
-//		startDetection {
-//            information_service_port = 11300 // context.attributes.thisInstance["port"]
-//			ServiceUtils.isPortOccupied(information_service_port)
-//		}
+        stopDetection {
+            // TODO: change port 20000 check to checking log_bank process and nginx port (maybe 20001?)
+            ports.values().any { port ->
+                ServiceUtils.isPortFree(port)
+            } && ServiceUtils.ProcessUtils.getPidsWithQuery(queries['thin']).isEmpty()
+        }
+    }
+}
 		
 //		monitors {
 //			try {
@@ -65,8 +79,7 @@ service {
 //				if (null!=mongo) mongo.close()
 //			}
 //		}
-	}
-	
+
 //	userInterface {
 //		metricGroups = ([
 //			metricGroup {
@@ -94,4 +107,3 @@ service {
 //		port = 30001
 //		protocolDescription ="HTTP"
 //	}
-}

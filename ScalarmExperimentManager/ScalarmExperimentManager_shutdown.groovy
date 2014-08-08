@@ -8,4 +8,6 @@ instanceID = serviceContext.getInstanceId()
 
 installDir = System.properties["user.home"] + "/.cloudify/${config.serviceName}" + instanceID
 
-new AntBuilder().delete(dir: installDir)
+def ant = new AntBuilder()
+
+ant.delete(dir: installDir)

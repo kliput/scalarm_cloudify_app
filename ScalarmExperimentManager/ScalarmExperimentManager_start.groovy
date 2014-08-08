@@ -8,7 +8,7 @@ instanceID = serviceContext.getInstanceId()
 
 installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceID
 serviceDir = "${installDir}/${config.serviceName}"
-nginxConfigDir = "${installDir}/nginx"
+nginxConfigDir = "${installDir}/nginx-experiment"
 
 // -----------
 
@@ -50,7 +50,33 @@ ant.exec(executable: "rake", dir: serviceDir,
 }
 
 
-// Sart EM
+// TODO: for local development purposes - mongodb router could be already launched
+if (!ServiceUtils.isPortOccupied(27017)) {
+
+    ant.chmod(
+        file: "${serviceDir}/bin/mongos",
+        perm: "a+x"
+    )
+    
+    try {
+        // Start local db_router
+        ant.exec(executable: "rake", dir: serviceDir,
+                outputproperty: "dbrOut",
+                errorproperty: "dbrErr",
+                resultproperty: "dbrExit",
+                failonerror: "false") {
+            arg(line: "db_router:start RAILS_ENV=production")
+        }
+    } catch (Exception e) {
+        throw e;
+    } finally {
+        println "rake db_router:start out: ${ant.project.properties.dbrOut}"
+        println "rake db_router:start err: ${ant.project.properties.dbrErr}"
+        println "rake db_router:start exit: ${ant.project.properties.dbrExit}"
+    }    
+}
+
+// Start EM
 // TODO: błąd, jeśli puma jest już uruchomiona, to rake service:start próbuje się uruchomić i pada z exitcode = 1
 // proces rake zawisa (nie wiadomo dlaczego)
 ant.exec(executable: "rake", dir: serviceDir,
@@ -65,8 +91,10 @@ println "rake service:start: ${ant.project.properties.cmdOut}"
 println "puma real PID: " + ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=puma.*unix.*scalarm_experiment_manager.sock.*")
 
 
-// Kill nginx if exists
-"sudo killall nginx".execute().waitFor()
+// Kill found nginx-storage processes
+ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=nginx.*master process nginx.*nginx-experiment.*").each { pid ->
+    "sudo kill ${pid}".execute().waitFor()
+}
 
 // Launch nginx
 println "Launching nginx..."

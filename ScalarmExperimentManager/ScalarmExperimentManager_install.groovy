@@ -10,7 +10,7 @@ instanceID = serviceContext.getInstanceId()
 installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceID
 serviceDir = "${installDir}/${config.serviceName}"
 serviceConfigDir = "${serviceDir}/config"
-nginxDir = "${installDir}/nginx"
+nginxDir = "${installDir}/nginx-experiment"
 
 //println "ruby -v: ${"ruby -v".execute().text}"
 //println "ls: ${"ls".execute().text}"
@@ -23,7 +23,7 @@ if (!isNginxPresent()) installNginx()
 builder.mkdir(dir: nginxDir)
 builder.mkdir(dir: "${nginxDir}/logs")
 builder.copy(todir: nginxDir) {
-    fileset(dir: "nginx")
+    fileset(dir: "nginx-experiment")
 }
 
 // download Experiment Manager's code

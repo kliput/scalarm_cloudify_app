@@ -13,17 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-def queryPuma = "Args.0.re=puma.*unix.*scalarm_experiment_manager.sock.*"
-def queryNginx = "Args.0.re=nginx.*master process nginx.*"
+def queries = [
+    'puma': "Args.0.re=puma.*unix.*scalarm_experiment_manager.sock.*",
+    'nginx': "Args.0.re=nginx.*master process nginx.*nginx-experiment.*"
+]
 
 def pumaProcessIsRunning = {
-    !ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=puma.*unix.*scalarm_experiment_manager.sock.*").isEmpty()
+    !ServiceUtils.ProcessUtils.getPidsWithQuery(queries['puma']).isEmpty()
 }
 
 def httpsPortIsOccupied = {
     ServiceUtils.isPortOccupied(443)
 }
 
+def localDbRouterIsWorking = {
+    ServiceUtils.isPortOccupied(27017)
+}
+
+// TODO: fails sometimes
 def isUrlAvailable = { url ->
     def output = ["sh", "-c", "curl -k -I ${url} | head -1 | cut -d' ' -f2"].execute().text
     output.isInteger() && output.toInteger() in [200, 301]
@@ -50,22 +57,24 @@ service {
         shutdown "ScalarmExperimentManager_shutdown.groovy"
 
         startDetection {
-            println "SD - puma: " + pumaProcessIsRunning()
-            println "SD - 443 port: " + httpsPortIsOccupied()
-            println "SD - url avail: " + scalarmLoginPageIsAvailable()
+            println "Start - puma: " + pumaProcessIsRunning()
+            println "Start - 443 port: " + httpsPortIsOccupied()
+            println "Start - url avail: " + scalarmLoginPageIsAvailable()
+            println "Start - DbR: " + localDbRouterIsWorking()
         
-            pumaProcessIsRunning() && httpsPortIsOccupied() && scalarmLoginPageIsAvailable()
+            pumaProcessIsRunning() && httpsPortIsOccupied() && localDbRouterIsWorking() //&& scalarmLoginPageIsAvailable()
         }
         stopDetection {
-            println "SD - puma: " + pumaProcessIsRunning()
-            println "SD - 443 port: " + httpsPortIsOccupied()
-            println "SD - url avail: " + scalarmLoginPageIsAvailable()
+            println "Stop - puma: " + pumaProcessIsRunning()
+            println "Stop - 443 port: " + httpsPortIsOccupied()
+            println "Stop - url avail: " + scalarmLoginPageIsAvailable()
+            println "Stop - DbR: " + localDbRouterIsWorking()
             
-            !pumaProcessIsRunning() || !httpsPortIsOccupied() || !scalarmLoginPageIsAvailable()
+            !pumaProcessIsRunning() || !httpsPortIsOccupied() || !localDbRouterIsWorking() //|| !scalarmLoginPageIsAvailable()
         }
         
         locator {
-            [queryNginx, queryPuma].inject([]) { collectedPids, query ->
+            queries.values().inject([]) { collectedPids, query ->
                 collectedPids += ServiceUtils.ProcessUtils.getPidsWithQuery(query)
             }
         }

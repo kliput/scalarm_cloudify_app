@@ -17,7 +17,10 @@ isPort = "11300"
 enHost = "localhost" // this host
 enPort = "443"
 
-"sudo killall nginx".execute()
+// Kill found nginx-storage processes
+ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=nginx.*master process nginx.*nginx-experiment.*").each { pid ->
+    "sudo kill ${pid}".execute().waitFor()
+}
 
 builder.exec(executable: "curl",
         outputproperty: "cmdOut1",
@@ -36,3 +39,12 @@ builder.exec(executable: "rake", dir: serviceDir,
 }
 
 println "stdout:        ${builder.project.properties.cmdOut}"
+
+builder.exec(executable: "rake", dir: serviceDir,
+        outputproperty: "cmdOut",
+        errorproperty: "cmdErr",
+        resultproperty: "cmdExit",
+        failonerror: "true") {
+    arg(line: "db_router:stop RAILS_ENV=production")
+}
+
