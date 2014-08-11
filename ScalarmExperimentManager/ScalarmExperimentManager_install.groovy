@@ -29,11 +29,13 @@ builder.copy(todir: nginxDir) {
 // download Experiment Manager's code
 builder.sequential {
 	mkdir(dir: installDir)
-	ServiceUtils.getDownloadUtil().get(config.downloadPath, "${installDir}/master.zip", true)
+	ServiceUtils.getDownloadUtil().get(config.downloadPath, "${installDir}/em.zip", true)
 }
 
-builder.unzip(src:"${installDir}/master.zip", dest: installDir, overwrite:true)
-builder.move(file:"${installDir}/${config.serviceName}-master", tofile: serviceDir)
+// TODO: scalarm_experiment_manager-anonymous-sm is a directory in from ZIP
+// change if GIT branch changes (e.g. to master)
+builder.unzip(src:"${installDir}/em.zip", dest: installDir, overwrite:true)
+builder.move(file:"${installDir}/${config.serviceName}-anonymous-sm", tofile: serviceDir)
 
 builder.copy(file:"scalarm.yml", todir: serviceConfigDir)
 builder.copy(file:"secrets.yml", todir: serviceConfigDir)
@@ -53,19 +55,18 @@ builder.mkdir(dir: "${serviceDir}/log")
 
 println "bundle install: ${builder.project.properties.cmdOut}"
 
-// TODO: compile assets disabled (assets are in package)
-// TODO: please uncomment if using fresh package from git
-// builder.exec(outputproperty:"cmdOut2",
-//         errorproperty: "cmdErr2",
-//         resultproperty:"cmdExit2",
-//         failonerror: "true",
-//         dir: serviceDir,
-//         executable: "rake"
-// ) {
-//     arg(line: "service:non_digested RAILS_ENV=production")
-// }
-// 
-// println "service:non_digested: ${builder.project.properties.cmdOut2}"
+// NOTICE: takes long time
+builder.exec(outputproperty:"cmdOut2",
+        errorproperty: "cmdErr2",
+        resultproperty:"cmdExit2",
+        failonerror: "true",
+        dir: serviceDir,
+        executable: "rake"
+) {
+    arg(line: "service:non_digested RAILS_ENV=production")
+}
+
+println "service:non_digested: ${builder.project.properties.cmdOut2}"
 
 
 boolean isNginxPresent() {

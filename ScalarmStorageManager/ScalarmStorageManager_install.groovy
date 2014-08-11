@@ -62,7 +62,7 @@ builder.exec(outputproperty:"cmdOut",
 println "stdout:        ${builder.project.properties.cmdOut}"
 
 // TODO: mongo version in directory name
-builder.move(file:"${installDir}/mongodb-${config.osName}-x86_64-2.6.0", tofile: "${serviceDir}/mongodb")
+builder.move(file:"${installDir}/mongodb-${config.osName}-x86_64-${config.mongodbVersion}", tofile: "${serviceDir}/mongodb")
 
 
 builder.exec(outputproperty:"cmdOut2",
