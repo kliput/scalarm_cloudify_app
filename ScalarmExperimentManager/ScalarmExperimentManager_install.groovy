@@ -32,10 +32,10 @@ builder.sequential {
 	ServiceUtils.getDownloadUtil().get(config.downloadPath, "${installDir}/em.zip", true)
 }
 
-// TODO: scalarm_experiment_manager-anonymous-sm is a directory in from ZIP
+// TODO: scalarm_experiment_manager-master is a directory in from ZIP
 // change if GIT branch changes (e.g. to master)
 builder.unzip(src:"${installDir}/em.zip", dest: installDir, overwrite:true)
-builder.move(file:"${installDir}/${config.serviceName}-anonymous-sm", tofile: serviceDir)
+builder.move(file:"${installDir}/${config.serviceName}-master", tofile: serviceDir)
 
 builder.copy(file:"scalarm.yml", todir: serviceConfigDir)
 builder.copy(file:"secrets.yml", todir: serviceConfigDir)
