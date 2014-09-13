@@ -1,23 +1,4 @@
-import org.cloudifysource.utilitydomain.context.ServiceContextFactory
-import org.cloudifysource.dsl.utils.ServiceUtils;
+evaluate(new File("Tools.groovy")) 
+def tools = new Tools()
 
-config = new ConfigSlurper().parse(new File("ScalarmInformationService-service.properties").toURL())
-
-serviceContext = ServiceContextFactory.getServiceContext()
-instanceID = serviceContext.getInstanceId()
-
-installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceID
-serviceDir = "${installDir}/${config.serviceName}"
-serviceConfigDir = "${serviceDir}/config"
-
-builder = new AntBuilder()
-
-builder.exec(executable: "rake", dir: "${serviceDir}",
-        outputproperty: "cmdOut",
-        errorproperty: "cmdErr",
-        resultproperty: "cmdExit",
-        failonerror: "true") {
-    arg(line: "service:start RAILS_ENV=production")
-}
-
-println "stdout:        ${builder.project.properties.cmdOut}"
+tools.command('RAILS_ENV=production rake service:start', tools.serviceDir)
