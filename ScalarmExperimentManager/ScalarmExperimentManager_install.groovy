@@ -16,7 +16,11 @@ nginxDir = "${installDir}/nginx-experiment"
 //println "ls: ${"ls".execute().text}"
 //println "pwd: ${"pwd".execute().text}"
 
+// TODO check ruby and install as in other services
+
 builder = new AntBuilder()
+
+if (!isRubyValid()) installRvmRuby()
 
 if (!isNginxPresent()) installNginx()
 
@@ -41,6 +45,10 @@ builder.copy(file:"scalarm.yml", todir: serviceConfigDir)
 builder.copy(file:"secrets.yml", todir: serviceConfigDir)
 builder.copy(file:"puma.rb", todir: serviceConfigDir)
 
+// TODO install GIT for bundle install
+
+tools.
+
 builder.exec(outputproperty:"cmdOut",
              errorproperty: "cmdErr",
              resultproperty:"cmdExit",
@@ -55,6 +63,13 @@ builder.mkdir(dir: "${serviceDir}/log")
 
 println "bundle install: ${builder.project.properties.cmdOut}"
 
+// TODO - it needs a is url?
+
+// install R, sysstat
+// sudo apt-get -y install r-base-core sysstat
+
+//TODO? r-cran-class r-cran-mass r-cran-nnet r-cran-spatial
+
 // NOTICE: takes long time
 builder.exec(outputproperty:"cmdOut2",
         errorproperty: "cmdErr2",
@@ -63,11 +78,28 @@ builder.exec(outputproperty:"cmdOut2",
         dir: serviceDir,
         executable: "rake"
 ) {
-    arg(line: "service:non_digested RAILS_ENV=production")
+    env(key: 'RAILS_ENV', value: 'production')
+    arg(line: "service:non_digested")
 }
 
 println "service:non_digested: ${builder.project.properties.cmdOut2}"
 
+boolean isRubyValid() {
+    def p = ['sh', '-c', 'ruby -v'].execute()
+    p.waitForOrKill(1000*5)
+    p.exitValue() == 0 && p.text =~ /ruby 2\.1.*/
+}
+
+void installRvmRuby() {
+    def command = [
+        "\\curl -sSL https://get.rvm.io | bash -s stable --ruby=2.1",
+        "source /home/ubuntu/.rvm/scripts/rvm"
+    ].join("; ")
+    
+    def proc = ['sudo', 'sh', '-c', command].execute()
+    proc.waitForOrKill(10*60*1000)
+    println "rvm installation output: ${proc.text}"
+}
 
 boolean isNginxPresent() {
     def p = ['sh', '-c', 'nginx -v'].execute()

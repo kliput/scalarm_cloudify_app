@@ -1,97 +1,67 @@
-import org.cloudifysource.utilitydomain.context.ServiceContextFactory
 import org.cloudifysource.dsl.utils.ServiceUtils;
 
-config = new ConfigSlurper().parse(new File("ScalarmStorageManager-service.properties").toURL())
+evaluate(new File("Tools.groovy")) 
+def tools = new Tools()
 
-serviceContext = ServiceContextFactory.getServiceContext()
-instanceID = serviceContext.getInstanceId()
+tools.installCurl()
 
-installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceID
-serviceDir = "${installDir}/${config.serviceName}"
-serviceConfigDir = "${serviceDir}/config"
-nginxDir = "${installDir}/nginx-storage"
+def nginxDir = "${tools.installDir}/nginx-storage"
 
-println "scalarm-sm-install.groovy: starting ..."
+if (!tools.isRubyValid()) tools.installRvmRuby()
+if (!tools.isNginxPresent()) tools.installNginx()
 
-println "ruby -v: ${"ruby -v".execute().text}"
-println "ls: ${"ls".execute().text}"
-println "pwd: ${"pwd".execute().text}"
+def ant = new AntBuilder()
 
-builder = new AntBuilder()
+// copy nginx configuration
+ant.sequential() {
+    mkdir(dir: nginxDir)
+    mkdir(dir: "${nginxDir}/logs")
+    copy(todir: nginxDir) {
+        fileset(dir: "nginx-storage")
+    }
+}
 
-if (!isNginxPresent()) installNginx()
+// download Storage Manager's code
+ant.sequential {
+    ServiceUtils.getDownloadUtil().get("${tools.config.downloadPath}", "${tools.installDir}/archive.zip", true)
+    unzip(src:"${tools.installDir}/archive.zip", dest: tools.installDir, overwrite: true)
+    def dirInPackage = "${tools.installDir}/${tools.config.serviceName}-${tools.config.scalarmTag}"
+    move(file: dirInPackage, tofile: tools.serviceDir)
+}
 
-builder.mkdir(dir: nginxDir)
-builder.mkdir(dir: "${nginxDir}/logs")
-builder.copy(todir: nginxDir) {
-    fileset(dir: "nginx-storage")
+// copy config files
+def configFiles = ['secrets.yml', 'thin.yml']
+configFiles.each { ant.copy(file: it, todir: tools.serviceConfigDir) }
+
+def scalarmYML = """\
+mongo_host: ${tools.thisHost}
+mongo_port: 27017
+db_name: 'scalarm_db'
+binaries_collection_name: 'simulation_files'
+host: ${tools.thisHost}
+db_instance_port: 30000
+db_instance_dbpath: ./../../scalarm_db_data
+db_instance_logpath: ./../../log/scalarm_db.log
+db_config_port: 28000
+db_config_dbpath: ./../../scalarm_db_config_data
+db_config_logpath: ./../../log/scalarm_db_config.log
+db_router_host: localhost
+db_router_port: 27017
+db_router_logpath: ./../../log/scalarm_db_router.log
+monitoring:
+  db_name: 'scalarm_monitoring'
+  metrics: ''
+  interval: 60
+"""
+
+new File("${tools.serviceConfigDir}/scalarm.yml").withWriter { out ->
+    out.writeLine(scalarmYML)
 }
 
 
-// download Simulation Manager's code
-builder.sequential {
-	mkdir(dir:"${installDir}")
-	ServiceUtils.getDownloadUtil().get("${config.downloadPath}", "${installDir}/master.zip", true)
-}
+// download MongoDB's binaries
+ServiceUtils.getDownloadUtil().get("${tools.config.mongodbDownloadUrl}", "${tools.installDir}/mongodb.tgz", true)
+tools.command('tar zxvf mongodb.tgz', tools.installDir)
+ant.move(file:"${tools.installDir}/mongodb-${tools.config.osName}-x86_64-${tools.config.mongodbVersion}", tofile: "${tools.serviceDir}/mongodb")
 
-builder.unzip(src:"${installDir}/master.zip", dest:"${installDir}", overwrite:true)
-builder.move(file:"${installDir}/${config.serviceName}-master", tofile: serviceDir)
-
-builder.copy(file:"scalarm.yml", todir:"${serviceConfigDir}")
-builder.copy(file:"secrets.yml", todir:"${serviceConfigDir}")
-builder.copy(file:"thin.yml", todir:"${serviceConfigDir}")
-
-// download MongoDB's code
-builder.sequential {
-    mkdir(dir:"${installDir}")
-    ServiceUtils.getDownloadUtil().get("${config.mongodbDownloadUrl}", "${installDir}/mongodb.tgz", true)
-}
-
-builder.exec(outputproperty:"cmdOut",
-        errorproperty: "cmdErr",
-        resultproperty:"cmdExit",
-        failonerror: "true",
-        dir: "${installDir}",
-        executable: "tar"
-) {
-    arg(line: "xzvf mongodb.tgz")
-}
-
-// OpenSSL: error:14077410:SSL routines:SSL23_GET_SERVER_HELLO:sslv3 alert handshake failure
-
-println "stdout:        ${builder.project.properties.cmdOut}"
-
-// TODO: mongo version in directory name
-builder.move(file:"${installDir}/mongodb-${config.osName}-x86_64-${config.mongodbVersion}", tofile: "${serviceDir}/mongodb")
-
-
-builder.exec(outputproperty:"cmdOut2",
-             errorproperty: "cmdErr2",
-             resultproperty:"cmdExit2",
-             failonerror: "true",
-             dir: serviceDir,
-             executable: "bundle"
-            ) {
-	arg(value: "install")
-}
-
-println "stdout2:        ${builder.project.properties.cmdOut2}"
-
-boolean isNginxPresent() {
-    def p = ['sh', '-c', 'nginx -v'].execute()
-    p.waitForOrKill(1000*5)
-    p.exitValue() == 0
-}
-
-void installNginx() {
-    def command = [
-        "add-apt-repository -y ppa:nginx/stable",
-        "apt-get update",
-        "apt-get install -y nginx"
-    ].join("; ")
-    
-    def proc = ['sudo', 'sh', '-c', command].execute()
-    proc.waitForOrKill(10*60*1000)
-    println "nginx installation output: ${proc.text}"
-}
-
+tools.command("bundle install", tools.serviceDir)

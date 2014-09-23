@@ -1,76 +1,29 @@
-import org.cloudifysource.utilitydomain.context.ServiceContextFactory
-import org.cloudifysource.dsl.utils.ServiceUtils;
+evaluate(new File("Tools.groovy")) 
+def tools = new Tools()
 
-config = new ConfigSlurper().parse(new File("ScalarmStorageManager-service.properties").toURL())
-
-serviceContext = ServiceContextFactory.getServiceContext()
-instanceID = serviceContext.getInstanceId()
-
-installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceID
-serviceDir = "${installDir}/${config.serviceName}"
-nginxConfigDir = "${installDir}/nginx-storage"
-
-builder = new AntBuilder()
-
-def isHost = "localhost"
-def isPort = "11300"
-
-def thisHost = "localhost"
-def logBankPort = "20001"
+def nginxConfigDir = "${tools.installDir}/nginx-storage"
 
 // in case if one of service parts is still running after some failure
-builder.exec(executable: "rake", dir: "${serviceDir}", failonerror: "false") {
-    arg(line: "service:stop RAILS_ENV=production")
-}
+tools.optionalCommand('rake service:stop', tools.serviceDir, [
+    'RAILS_ENV': 'production',
+    'IS_URL': "${tools.isHost}:${tools.config.isPort}",
+    'IS_USER': tools.config.isUser,
+    'IS_PASS': tools.config.isPass
+])
 
-builder.exec(executable: "rake", dir: "${serviceDir}",
-        outputproperty: "cmdOut",
-        errorproperty: "cmdErr",
-        resultproperty: "cmdExit",
-        failonerror: "false") {
-    arg(line: "service:start RAILS_ENV=production")
-}
-
+tools.command('rake service:start', tools.serviceDir, [
+    'RAILS_ENV': 'production',
+    'IS_URL': "${tools.isHost}:${tools.config.isPort}",
+    'IS_USER': tools.config.isUser,
+    'IS_PASS': tools.config.isPass
+])
 
 // Kill found nginx-storage processes
-ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=nginx.*master process nginx.*nginx-storage.*").each { pid ->
-    "sudo kill ${pid}".execute().waitFor()
-}
+tools.killAllNginxes()
 
-// Launch nginx
-println "Launching nginx..."
-builder.exec(executable: "sh", dir: installDir,
-        outputproperty: "nginxOut",
-        errorproperty: "nginxErr",
-        resultproperty: "nginxExit",
-        failonerror: "true") {
-    arg(value: "-c")
-    arg(value: "sudo nginx -c ${nginxConfigDir}/nginx.conf -p ${nginxConfigDir}")
-}
+// earlier: ${nginxConfigDir}/nginx.conf
+tools.command("sudo nginx -c nginx.conf -p ${nginxConfigDir}")
 
-println "nginx exit:          ${builder.project.properties.nginxExit}"
-println "nginx stdout:        ${builder.project.properties.nginxOut}"
-println "nginx stderr:        ${builder.project.properties.nginxErr}"
-
-
-// Deregister this Storage from IS (because registering the same address causes error)
-// TODO to determine
-builder.exec(executable: "curl",
-        outputproperty: "cmdOut1",
-        failonerror: "false") {
-    arg(line: "--user scalarm:scalarm")
-    arg(line: "-k -X POST https://${isHost}:${isPort}/storage/deregister")
-    arg(line: "--data \"address=${thisHost}:${logBankPort}\"")
-}
-
-// Register Storage in IS
-builder.exec(executable: "curl",
-        outputproperty: "cmdOut1",
-        failonerror: "true") {
-    arg(line: "--user scalarm:scalarm")
-    arg(line: "-k -X POST https://${isHost}:${isPort}/storage/register")
-    arg(line: "--data \"address=${thisHost}:${logBankPort}\"")
-}
-
-
-println "stdout:        ${builder.project.properties.cmdOut}"
+// first, deregister this Storage from IS (because registering the same address causes error)
+tools.deregisterStorageManager()
+tools.registerStorageManager()

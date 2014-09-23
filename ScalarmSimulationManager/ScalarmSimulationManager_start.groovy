@@ -26,7 +26,7 @@ builder.exec(executable: "sh",
         failonerror: "true",
 ) {
     arg(value: "-c")
-    arg(value: "nohup ruby simulation_manager.rb >sim.log 2>&1 </dev/null & echo \$!")
+    arg(value: "nohup ruby simulation_manager.rb >sim.log 2>&1 </dev/null & echo $!")
 }
 
 def pid = builder.project.properties.cmdOutSim

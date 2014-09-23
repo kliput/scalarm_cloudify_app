@@ -1,19 +1,3 @@
-/*******************************************************************************
-* Copyright (c) 2012 GigaSpaces Technologies Ltd. All rights reserved
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*       http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************/
-
 def queries = [
     'mongos': "Args.0.re=./mongos,Args.1.re=--bind_ip",
     'mongod_shard': "Args.0.re=./mongod,Args.1.re=--shardsvr",
@@ -29,24 +13,54 @@ def ports = [
     'nginx': 20001
 ]
 
-service {
-	
-	name "ScalarmStorageManager"
-	type "APP_SERVER"
-	numInstances 1
-	
-	compute {
-		template "SMALL_LINUX"
-	}
 
-	lifecycle {
-		install "ScalarmStorageManager_install.groovy"
-		start "ScalarmStorageManager_start.groovy"
-		stop "ScalarmStorageManager_stop.groovy"
+def agentPrivateIP() {
+    System.getenv()["CLOUDIFY_AGENT_ENV_PRIVATE_IP"]
+}
+
+// TODO: don't know why this does not work...
+// warning: ruby must be already installed (it should be invoked after service installation)
+def rubyPrivateIP() {
+    def ant = new AntBuilder()
+    ant.exec(executable: 'bash',
+        outputproperty: 'out'
+    ) {
+        arg(line: '--login -c')
+        arg(value: "ruby -e 'require \"socket\"; puts UDPSocket.open {|s| s.connect(\"64.233.187.99\", 1); s.addr.last}'")
+    }
+    
+    ant.project.properties.out
+}
+
+def privateIP() {
+    // todo
+}
+
+service {
+    name "ScalarmStorageManager"
+    type "NOSQL_DB"
+    numInstances 1
+
+    compute {
+        template "SMALL_LINUX"
+    }
+
+    lifecycle {
+        install "ScalarmStorageManager_install.groovy"
+        start "ScalarmStorageManager_start.groovy"
+        stop "ScalarmStorageManager_stop.groovy"
         shutdown "ScalarmStorageManager_shutdown.groovy"
-        startDetection {
-            ServiceUtils.arePortsOccupied(new ArrayList(ports.values())) &&
-                !ServiceUtils.ProcessUtils.getPidsWithQuery(queries['thin']).isEmpty()
+        startDetection {        
+            def privateIP = agentPrivateIP()
+            println "This host is: ${privateIP}"
+        
+            ports.each { p ->
+                println "CHECK ${p.key}-${p.value}: ${ServiceUtils.isPortOccupied(privateIP, p.value)}"
+            }
+        
+            ports.values().every { port ->
+                ServiceUtils.isPortOccupied(privateIP, port)
+            } && !ServiceUtils.ProcessUtils.getPidsWithQuery(queries['thin']).isEmpty()
         }
         locator {
             queries.values().inject([]) { collectedPids, query ->
@@ -54,12 +68,58 @@ service {
             }
         }
         stopDetection {
-            // TODO: change port 20000 check to checking log_bank process and nginx port (maybe 20001?)
+            def privateIP = agentPrivateIP()
             ports.values().any { port ->
-                ServiceUtils.isPortFree(port)
+               ServiceUtils.isPortFree(privateIP, port)
             } && ServiceUtils.ProcessUtils.getPidsWithQuery(queries['thin']).isEmpty()
         }
     }
+    
+    // TODO: check required port access types
+        network {
+            port = 22
+            protocolDescription = "SSH"
+            template "APPLICATION_NET"
+            accessRules {
+                    incoming ([
+                            accessRule {
+                                    type "PUBLIC"
+                                    portRange 22
+                                    target "0.0.0.0/0"
+                            }
+                    ])
+            }
+        }
+    /*
+    network {
+        template "APPLICATION_NET"
+        accessRules {[
+            incoming ([
+                accessRule {
+                    type "APPLICATION"
+                    portRange 27017
+                    target "0.0.0.0/0"
+                },
+                accessRule {
+                    type "APPLICATION"
+                    portRange "1-40000"
+                    target "0.0.0.0/0"
+                }             
+            ]),
+            outgoing ([
+                accessRule {
+                    type "PUBLIC"
+                    portRange "8443"
+                    target "0.0.0.0/0"
+                },
+                accessRule {
+                    type "APPLICATION"
+                    portRange "1-40000"
+                    target "0.0.0.0/0"
+                }
+            ])
+        ]}
+    }*/
 }
 		
 //		monitors {
