@@ -74,22 +74,40 @@ service {
             } && ServiceUtils.ProcessUtils.getPidsWithQuery(queries['thin']).isEmpty()
         }
     }
-    
+        
     // TODO: check required port access types
-        network {
-            port = 22
-            protocolDescription = "SSH"
-            template "APPLICATION_NET"
-            accessRules {
-                    incoming ([
-                            accessRule {
-                                    type "PUBLIC"
-                                    portRange 22
-                                    target "0.0.0.0/0"
-                            }
-                    ])
-            }
+    network {
+        accessRules {
+            incoming ([
+                accessRule {
+                    type "PUBLIC"
+                    portRange 22
+                    target "0.0.0.0/0"
+                },
+                accessRule {
+                    type "PUBLIC"
+                    portRange ports['mongos']
+                    target "0.0.0.0/0"
+                },
+                accessRule {
+                    type "PUBLIC"
+                    portRange ports['mongod_shard']
+                    target "0.0.0.0/0"
+                },
+                accessRule {
+                    type "PUBLIC"
+                    portRange ports['mongod_config']
+                    target "0.0.0.0/0"
+                },
+                accessRule {
+                    type "PUBLIC"
+                    portRange ports['nginx']
+                    target "0.0.0.0/0"
+                }
+            ])
         }
+    }
+    
     /*
     network {
         template "APPLICATION_NET"
