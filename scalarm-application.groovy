@@ -10,11 +10,11 @@ application {
         dependsOn = [ "ScalarmInformationService" ]
     }
 
-//     service {
-//         name = "ScalarmExperimentManager"
-//         dependsOn = [ "ScalarmInformationService", "ScalarmStorageManager" ]
-//     }
-//     
+    service {
+        name = "ScalarmExperimentManager"
+        dependsOn = [ "ScalarmInformationService", "ScalarmStorageManager" ]
+    }
+    
 //     service {
 //         name = "ScalarmSimulationManager"
 //         dependsOn = [

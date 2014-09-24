@@ -1,43 +1,32 @@
-/*******************************************************************************
-* Copyright (c) 2012 GigaSpaces Technologies Ltd. All rights reserved
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*       http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************/
 def queries = [
     'puma': "Args.0.re=puma.*unix.*scalarm_experiment_manager.sock.*",
     'nginx': "Args.0.re=nginx.*master process nginx.*nginx-experiment.*"
 ]
+
+def agentPrivateIP() {
+    System.getenv()["CLOUDIFY_AGENT_ENV_PRIVATE_IP"]
+}
 
 def pumaProcessIsRunning = {
     !ServiceUtils.ProcessUtils.getPidsWithQuery(queries['puma']).isEmpty()
 }
 
 def httpsPortIsOccupied = {
-    ServiceUtils.isPortOccupied(443)
+    ServiceUtils.isPortOccupied(agentPrivateIP(), 443)
 }
 
 def localDbRouterIsWorking = {
-    ServiceUtils.isPortOccupied(27017)
+    ServiceUtils.isPortOccupied(agentPrivateIP(), 27017)
 }
 
-// TODO: fails sometimes
+// TODO: fails sometimes - better not use
 def isUrlAvailable = { url ->
     def output = ["sh", "-c", "curl -k -I ${url} | head -1 | cut -d' ' -f2"].execute().text
     output.isInteger() && output.toInteger() in [200, 301]
 }
 
 def scalarmLoginPageIsAvailable = {
-    isUrlAvailable("https://localhost/login")
+    isUrlAvailable("https://${agentPrivateIP()}/login")
 }
 
 service {
@@ -77,6 +66,27 @@ service {
             queries.values().inject([]) { collectedPids, query ->
                 collectedPids += ServiceUtils.ProcessUtils.getPidsWithQuery(query)
             }
+        }
+        
+    }
+    
+    network {
+        port = 443
+        protocolDescription = "HTTPS"
+        template "APPLICATION_NET"
+        accessRules {
+            incoming ([
+                accessRule {
+                    type "PUBLIC"
+                    portRange 443
+                    target "0.0.0.0/0"
+                },
+                accessRule {
+                    type "PUBLIC"
+                    portRange 22
+                    target "0.0.0.0/0"
+                },
+            ])
         }
     }
 }

@@ -77,6 +77,9 @@ service {
         
     // TODO: check required port access types
     network {
+        port = ports['nginx']
+        protocolDescription = "HTTPS"
+        template "APPLICATION_NET"
         accessRules {
             incoming ([
                 accessRule {

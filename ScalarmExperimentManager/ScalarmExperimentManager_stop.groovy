@@ -1,50 +1,22 @@
-import org.cloudifysource.utilitydomain.context.ServiceContextFactory
-import org.cloudifysource.dsl.utils.ServiceUtils;
+evaluate(new File("Tools.groovy"))
+def tools = new Tools()
 
-config = new ConfigSlurper().parse(new File("ScalarmExperimentManager-service.properties").toURL())
+def ant = new AntBuilder()
 
-serviceContext = ServiceContextFactory.getServiceContext()
-instanceID = serviceContext.getInstanceId()
+tools.killAllNginxes()
 
-installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceID
-serviceDir = "${installDir}/${config.serviceName}"
+tools.deregisterExperimentManager()
 
-builder = new AntBuilder()
+tools.command("rake service:stop", tools.serviceDir, [
+    'RAILS_ENV': 'production',
+    'IS_URL': tools.isHost,
+    'IS_USER': 'scalarm',
+    'IS_PASS': 'scalarm'
+])
 
-isHost = "localhost"
-isPort = "11300"
-
-enHost = "localhost" // this host
-enPort = "443"
-
-// Kill found nginx-storage processes
-ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=nginx.*master process nginx.*nginx-experiment.*").each { pid ->
-    "sudo kill ${pid}".execute().waitFor()
-}
-
-builder.exec(executable: "curl",
-        outputproperty: "cmdOut1",
-        failonerror: "true") {
-    arg(line: "--user scalarm:scalarm")
-    arg(line: "-k -X POST https://${isHost}:${isPort}/experiments/deregister")
-    arg(line: "--data \"address=${enHost}:${enPort}\"")
-}
-
-builder.exec(executable: "rake", dir: serviceDir,
-        outputproperty: "cmdOut",
-        errorproperty: "cmdErr",
-        resultproperty: "cmdExit",
-        failonerror: "true") {
-    arg(line: "service:stop RAILS_ENV=production")
-}
-
-println "stdout:        ${builder.project.properties.cmdOut}"
-
-builder.exec(executable: "rake", dir: serviceDir,
-        outputproperty: "cmdOut",
-        errorproperty: "cmdErr",
-        resultproperty: "cmdExit",
-        failonerror: "true") {
-    arg(line: "db_router:stop RAILS_ENV=production")
-}
-
+tools.optionalCommand("rake db_router:stop", tools.serviceDir, [
+    'RAILS_ENV': 'production',
+    'IS_URL': tools.isHost,
+    'IS_USER': 'scalarm',
+    'IS_PASS': 'scalarm'
+])
