@@ -6,7 +6,7 @@ service {
         numInstances 1
         
         compute {
-            template "SMALL_LINUX"
+            template "SCALARM_LINUX"
         }
 
         lifecycle {
@@ -27,25 +27,25 @@ service {
             shutdown "ScalarmInformationService_shutdown.groovy"
         }
         
-        network {
-            port = 11300
-            protocolDescription = "HTTPS"
-            template "APPLICATION_NET"
-            accessRules {
-                    incoming ([
-                            accessRule {
-                                    type "PUBLIC"
-                                    portRange 11300
-                                    target "0.0.0.0/0"
-                            },
-                            accessRule {
-                                    type "PUBLIC"
-                                    portRange 22
-                                    target "0.0.0.0/0"
-                            }
-                    ])
-            }
-        }
+//         network {
+//             port = 11300
+//             protocolDescription = "HTTPS"
+//             template "APPLICATION_NET"
+//             accessRules {
+//                     incoming ([
+//                             accessRule {
+//                                     type "PUBLIC"
+//                                     portRange 11300
+//                                     target "0.0.0.0/0"
+//                             },
+//                             accessRule {
+//                                     type "PUBLIC"
+//                                     portRange 22
+//                                     target "0.0.0.0/0"
+//                             }
+//                     ])
+//             }
+//         }
 }
 
 

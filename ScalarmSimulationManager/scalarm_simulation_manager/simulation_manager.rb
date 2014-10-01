@@ -119,7 +119,7 @@ while true
       puts "It has the following execution constraints: #{simulation_input['execution_constraints']}"
 
       simulation_dir = File.absolute_path "./#{experiment_dir}/simulation_#{simulation_input['simulation_id']}"
-      Dir.mkdir(simulation_dir)
+      Dir.mkdir(simulation_dir) unless Dir.exists?(simulation_dir)
 
       IO.write("#{simulation_dir}/input.json", simulation_input['input_parameters'].to_json)
       # 6b. run an adapter script (input writer) for input information: input.json -> some specific code
@@ -158,7 +158,7 @@ while true
             if File.exist?(File.join(code_base_dir, 'progress_monitor'))
 
               while true
-                progress_monitor_output = %x["#{code_base_dir}/progress_monitor"]
+                progress_monitor_output = %x["#{code_base_dir}/progress_monitor 2>&1"]
                 puts "[progress monitor] script output: #{progress_monitor_output}"
                 IO.write('_stdout.txt', "[progress monitor] script output: #{progress_monitor_output}")
 
@@ -179,7 +179,7 @@ while true
           writer.puts em_url
         end
 
-        executor_output = %x["#{code_base_dir}/executor"]
+        executor_output = %x["#{code_base_dir}/executor 2>&1"]
         puts "Executor output: #{executor_output}"
         IO.write('_stdout.txt', "Executor output: #{executor_output}")
         # 6c.2. killing progress monitor process
@@ -201,7 +201,7 @@ while true
         puts Dir.pwd
 
         if File.exist?("#{code_base_dir}/output_reader")
-          output_reader_output = %x["#{code_base_dir}/output_reader"]
+          output_reader_output = %x["#{code_base_dir}/output_reader 2>&1"]
           puts "Output reader output: #{output_reader_output}"
           IO.write('_stdout.txt', "Output reader output: #{output_reader_output}")
         end

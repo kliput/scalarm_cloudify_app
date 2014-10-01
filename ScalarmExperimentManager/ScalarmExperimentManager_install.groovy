@@ -19,7 +19,7 @@ ant.copy(todir: nginxDir) {
 
 // download Experiment Manager's code
 ant.sequential {
-    mkdir(dir: installDir)
+    mkdir(dir: tools.installDir)
     ServiceUtils.getDownloadUtil().get(tools.config.downloadPath, "${tools.installDir}/em.zip", true)
 }
 

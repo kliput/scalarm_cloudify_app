@@ -42,7 +42,7 @@ service {
     numInstances 1
 
     compute {
-        template "SMALL_LINUX"
+        template "SCALARM_LINUX"
     }
 
     lifecycle {
@@ -50,7 +50,7 @@ service {
         start "ScalarmStorageManager_start.groovy"
         stop "ScalarmStorageManager_stop.groovy"
         shutdown "ScalarmStorageManager_shutdown.groovy"
-        startDetection {        
+        startDetection {
             def privateIP = agentPrivateIP()
             println "This host is: ${privateIP}"
         
@@ -76,40 +76,40 @@ service {
     }
         
     // TODO: check required port access types
-    network {
-        port = ports['nginx']
-        protocolDescription = "HTTPS"
-        template "APPLICATION_NET"
-        accessRules {
-            incoming ([
-                accessRule {
-                    type "PUBLIC"
-                    portRange 22
-                    target "0.0.0.0/0"
-                },
-                accessRule {
-                    type "PUBLIC"
-                    portRange ports['mongos']
-                    target "0.0.0.0/0"
-                },
-                accessRule {
-                    type "PUBLIC"
-                    portRange ports['mongod_shard']
-                    target "0.0.0.0/0"
-                },
-                accessRule {
-                    type "PUBLIC"
-                    portRange ports['mongod_config']
-                    target "0.0.0.0/0"
-                },
-                accessRule {
-                    type "PUBLIC"
-                    portRange ports['nginx']
-                    target "0.0.0.0/0"
-                }
-            ])
-        }
-    }
+//     network {
+//         port = ports['nginx']
+//         protocolDescription = "HTTPS"
+//         template "APPLICATION_NET"
+//         accessRules {
+//             incoming ([
+//                 accessRule {
+//                     type "PUBLIC"
+//                     portRange 22
+//                     target "0.0.0.0/0"
+//                 },
+//                 accessRule {
+//                     type "PUBLIC"
+//                     portRange ports['mongos']
+//                     target "0.0.0.0/0"
+//                 },
+//                 accessRule {
+//                     type "PUBLIC"
+//                     portRange ports['mongod_shard']
+//                     target "0.0.0.0/0"
+//                 },
+//                 accessRule {
+//                     type "PUBLIC"
+//                     portRange ports['mongod_config']
+//                     target "0.0.0.0/0"
+//                 },
+//                 accessRule {
+//                     type "PUBLIC"
+//                     portRange ports['nginx']
+//                     target "0.0.0.0/0"
+//                 }
+//             ])
+//         }
+//     }
     
     /*
     network {

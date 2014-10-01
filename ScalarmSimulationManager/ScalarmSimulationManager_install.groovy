@@ -1,21 +1,9 @@
-import org.cloudifysource.utilitydomain.context.ServiceContextFactory
-import org.cloudifysource.dsl.utils.ServiceUtils;
+evaluate(new File("Tools.groovy")) 
+def tools = new Tools()
 
-config = new ConfigSlurper().parse(new File("ScalarmSimulationManager-service.properties").toURL())
+tools.command("sudo apt-get -y install zip")
 
-serviceContext = ServiceContextFactory.getServiceContext()
-instanceID = serviceContext.getInstanceId()
-
-installDir = System.properties["user.home"] + "/.cloudify/${config.serviceName}" + instanceID
-serviceDir = "${installDir}/${config.serviceName}"
-
-//println "ruby -v: ${"ruby -v".execute().text}"
-//println "ls: ${"ls".execute().text}"
-//println "pwd: ${"pwd".execute().text}"
-
-// TODO check ruby and install as in other services
-
-// TODO install unzip
+if (!tools.isRubyValid()) tools.installRvmRuby()
 
 ant = new AntBuilder()
 
@@ -23,9 +11,8 @@ ant.copy(todir: serviceDir) {
     fileset(dir: "scalarm_simulation_manager")
 }
 
-// TODO: tworzenie pliku config.json
-// z wypełnionym service_url
-// {"information_service_url":"0.0.0.0:11300","experiment_manager_user":"anonymous","experiment_manager_pass":"pass123"}
+def configStr = "{\"information_service_url\":\"${tools.isHost}:${tools.config.isPort}\",\"experiment_manager_user\":\"${tools.config.emUser}\",\"experiment_manager_pass\":\"${tools.config.emPassword}\"}"
 
-
-// println builder.project.properties.cmdOutSim
+new File("${tools.serviceDir}/config.json").withWriter { out ->
+    out.writeLine(configStr)
+}

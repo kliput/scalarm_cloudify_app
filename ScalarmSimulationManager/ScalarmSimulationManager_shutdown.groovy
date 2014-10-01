@@ -1,11 +1,4 @@
-import org.cloudifysource.utilitydomain.context.ServiceContextFactory
-import org.cloudifysource.dsl.utils.ServiceUtils;
+evaluate(new File("Tools.groovy")) 
+def tools = new Tools()
 
-config = new ConfigSlurper().parse(new File("ScalarmSimulationManager-service.properties").toURL())
-
-serviceContext = ServiceContextFactory.getServiceContext()
-instanceID = serviceContext.getInstanceId()
-
-installDir = System.properties["user.home"] + "/.cloudify/${config.serviceName}" + instanceID
-
-new AntBuilder().delete(dir: installDir)
+new AntBuilder().delete(dir: tools.installDir)

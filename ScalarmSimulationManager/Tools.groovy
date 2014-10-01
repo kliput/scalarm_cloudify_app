@@ -16,7 +16,7 @@ public class Tools
     def Tools() {
         serviceContext = ServiceContextFactory.getServiceContext()
         instanceId = serviceContext.getInstanceId()
-        config = new ConfigSlurper().parse(new File("ScalarmExperimentManager-service.properties").toURL())
+        config = new ConfigSlurper().parse(new File("ScalarmSimulationManager-service.properties").toURL())
         installDir = System.properties["user.home"]+ "/.cloudify/${config.serviceName}" + instanceId
         serviceDir = "${installDir}/${config.serviceName}"
         serviceConfigDir = "${serviceDir}/config"
@@ -53,6 +53,12 @@ public class Tools
     
     def killAllNginxes() {
         ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.re=nginx.*master process nginx.*nginx-experiment.*").each { pid ->
+            optionalCommand("sudo kill ${pid}")
+        }
+    }
+    
+    def killAllSimulationManagers() {
+        getSimulationManagerPids().collect { pid ->
             optionalCommand("sudo kill ${pid}")
         }
     }
@@ -101,6 +107,10 @@ public class Tools
         ].join(" && ")
         
         command(cmd)
+    }
+    
+    def getSimulationManagerPids() {
+        ServiceUtils.ProcessUtils.getPidsWithQuery("Args.0.eq=ruby,Args.1.eq=simulation_manager.rb")
     }
     
     def execute(executable, dir, failonerror, args=[], envs=[]) {

@@ -1,6 +1,6 @@
 application {
     name="Scalarm"
-
+    
     service {
         name = "ScalarmInformationService"
     }
@@ -15,11 +15,11 @@ application {
         dependsOn = [ "ScalarmInformationService", "ScalarmStorageManager" ]
     }
     
-//     service {
-//         name = "ScalarmSimulationManager"
-//         dependsOn = [
-//             "ScalarmInformationService", "ScalarmStorageManager",
-//             "ScalarmExperimentManager"
-//         ]
-//     }
+    service {
+        name = "ScalarmSimulationManager"
+        dependsOn = [
+            "ScalarmInformationService", "ScalarmStorageManager",
+            "ScalarmExperimentManager"
+        ]
+    }
 }
