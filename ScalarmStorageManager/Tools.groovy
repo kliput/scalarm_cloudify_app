@@ -10,7 +10,6 @@ public class Tools
     def installDir
     def serviceDir
     def serviceConfigDir
-    def isHost
     def thisHost
     
     def Tools() {
@@ -22,8 +21,7 @@ public class Tools
         serviceConfigDir = "${serviceDir}/config"
         
         new AntBuilder().mkdir(dir: installDir) // works like mkdir -p
-            
-        isHost = getIsHost()
+        
         thisHost = getThisHost()
     }
     
@@ -34,7 +32,7 @@ public class Tools
     def deregisterStorageManager() {
         execute('curl', installDir, false, [
             '--user', 'scalarm:scalarm',
-            '-k', '-X', 'POST', "https://${isHost}:${config.isPort}/storage/deregister",
+            '-k', '-X', 'POST', "https://${getIsHost()}:${config.isPort}/storage/deregister",
             '--data', "address=${thisHost}:${config.logBankPort}"
         ])
     }
@@ -42,7 +40,7 @@ public class Tools
     def registerStorageManager() {
         execute('curl', installDir, true, [
             '--user', 'scalarm:scalarm',
-            '-k', '-X', 'POST', "https://${isHost}:${config.isPort}/storage/register",
+            '-k', '-X', 'POST', "https://${getIsHost()}:${config.isPort}/storage/register",
             '--data', "address=${thisHost}:${config.logBankPort}"
         ])
     }

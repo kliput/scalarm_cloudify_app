@@ -10,7 +10,6 @@ public class Tools
     def installDir
     def serviceDir
     def serviceConfigDir
-    def isHost
     def thisHost
     
     def Tools() {
@@ -22,8 +21,7 @@ public class Tools
         serviceConfigDir = "${serviceDir}/config"
         
         new AntBuilder().mkdir(dir: installDir) // works like mkdir -p
-            
-        isHost = getIsHost()
+        
         thisHost = getThisHost()
     }
     
@@ -38,7 +36,7 @@ public class Tools
     def deregisterExperimentManager() {
         execute('curl', installDir, false, [
             '--user', 'scalarm:scalarm',
-            '-k', '-X', 'POST', "https://${isHost}:${config.isPort}/experiments/deregister",
+            '-k', '-X', 'POST', "https://${getIsHost()}:${config.isPort}/experiments/deregister",
             '--data', "address=${thisHost}:443"
         ])
     }
@@ -46,7 +44,7 @@ public class Tools
     def registerExperimentManager() {
         execute('curl', installDir, true, [
             '--user', 'scalarm:scalarm',
-            '-k', '-X', 'POST', "https://${isHost}:${config.isPort}/experiments/register",
+            '-k', '-X', 'POST', "https://${getIsHost()}:${config.isPort}/experiments/register",
             '--data', "address=${thisHost}:443"
         ])
     }

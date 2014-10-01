@@ -9,7 +9,7 @@ def ant = new AntBuilder()
 
 tools.optionalCommand("rake service:stop", tools.serviceDir, [
     'RAILS_ENV': 'production',
-    'IS_URL': tools.isHost,
+    'IS_URL': tools.getIsHost(),
     'IS_USER': 'scalarm',
     'IS_PASS': 'scalarm'
 ])
@@ -25,7 +25,7 @@ if (!ServiceUtils.isPortOccupied(27017)) {
     
     tools.command("rake db_router:start", tools.serviceDir, [
         'RAILS_ENV': 'production',
-        'IS_URL': tools.isHost,
+        'IS_URL': tools.getIsHost(),
         'IS_USER': 'scalarm',
         'IS_PASS': 'scalarm'
     ])
@@ -36,7 +36,7 @@ if (!ServiceUtils.isPortOccupied(27017)) {
 // proces rake zawisa (nie wiadomo dlaczego)
 tools.command("rake service:start", tools.serviceDir, [
     'RAILS_ENV': 'production',
-    'IS_URL': tools.isHost,
+    'IS_URL': tools.getIsHost(),
     'IS_USER': 'scalarm',
     'IS_PASS': 'scalarm'
 ])
