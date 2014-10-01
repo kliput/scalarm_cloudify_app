@@ -7,7 +7,7 @@ if (!tools.isRubyValid()) tools.installRvmRuby()
 
 ant = new AntBuilder()
 
-ant.copy(todir: serviceDir) {
+ant.copy(todir: tools.serviceDir) {
     fileset(dir: "scalarm_simulation_manager")
 }
 

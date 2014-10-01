@@ -26,7 +26,7 @@ ant.sequential {
 // TODO: scalarm_experiment_manager-master is a directory in from ZIP
 // change if GIT branch changes (e.g. to master)
 ant.unzip(src:"${tools.installDir}/em.zip", dest: tools.installDir, overwrite:true)
-ant.move(file:"${tools.installDir}/${tools.config.serviceName}-${tools.config.scalarmTag}", tofile: serviceDir)
+ant.move(file:"${tools.installDir}/${tools.config.serviceName}-${tools.config.scalarmTag}", tofile: tools.serviceDir)
 
 ant.copy(file:"scalarm.yml", todir: tools.serviceConfigDir)
 ant.copy(file:"secrets.yml", todir: tools.serviceConfigDir)
