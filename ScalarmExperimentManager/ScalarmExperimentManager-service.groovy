@@ -16,7 +16,8 @@ def httpsPortIsOccupied = {
 }
 
 def localDbRouterIsWorking = {
-    ServiceUtils.isPortOccupied(agentPrivateIP(), 27017)
+    // db_router is listening on localhost
+    ServiceUtils.isPortOccupied(27017)
 }
 
 // TODO: fails sometimes - better not use
@@ -41,6 +42,8 @@ service {
 
 	lifecycle {
 		install "ScalarmExperimentManager_install.groovy"
+		
+		startDetectionTimeoutSecs 400
 		start "ScalarmExperimentManager_start.groovy"
 		stop "ScalarmExperimentManager_stop.groovy"
         shutdown "ScalarmExperimentManager_shutdown.groovy"

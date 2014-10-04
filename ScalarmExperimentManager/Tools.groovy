@@ -101,6 +101,23 @@ public class Tools
         command(cmd)
     }
     
+    def commandProduction(cmd) {
+        command(cmd, serviceDir, envsProduction())
+    }
+    
+    def optionalCommandProduction(cmd) {
+        optionalCommand(cmd, serviceDir, envsProduction())
+    }
+    
+    def envsProduction() {
+        [
+            'RAILS_ENV': 'production',
+            'IS_URL': "${getIsHost()}:${config.isPort}",
+            'IS_USER': 'scalarm',
+            'IS_PASS': 'scalarm'
+        ]
+    }
+    
     def execute(executable, dir, failonerror, args=[], envs=[]) {
         def cmd = "${executable} ${args.join(' ')}"
         println "executing: '${cmd}' in ${dir}"
@@ -121,6 +138,7 @@ public class Tools
             }
         } finally {
             println "finished: '${cmd}' with exit code ${ant.project.properties.result}"
+            println "used envs: ${envs}"
             println "- stdout: ${ant.project.properties.out}"
             println "- stderr: ${ant.project.properties.err}"
         }

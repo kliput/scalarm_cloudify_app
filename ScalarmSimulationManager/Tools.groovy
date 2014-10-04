@@ -29,24 +29,8 @@ public class Tools
         command("sudo apt-get -y install curl")
     }
     
-    void installGit() {
+    def installGit() {
         command("sudo apt-get -y install git")
-    }
-    
-    def deregisterExperimentManager() {
-        execute('curl', installDir, false, [
-            '--user', 'scalarm:scalarm',
-            '-k', '-X', 'POST', "https://${getIsHost()}:${config.isPort}/experiments/deregister",
-            '--data', "address=${thisHost}:443"
-        ])
-    }
-    
-    def registerExperimentManager() {
-        execute('curl', installDir, true, [
-            '--user', 'scalarm:scalarm',
-            '-k', '-X', 'POST', "https://${getIsHost()}:${config.isPort}/experiments/register",
-            '--data', "address=${thisHost}:443"
-        ])
     }
     
     def killAllNginxes() {
@@ -96,7 +80,7 @@ public class Tools
         p['exit'] == 0
     }
 
-    void installNginx() {
+    def installNginx() {
         def cmd = [
             "sudo apt-get -y install python-software-properties software-properties-common",
             "sudo add-apt-repository -y ppa:nginx/stable",

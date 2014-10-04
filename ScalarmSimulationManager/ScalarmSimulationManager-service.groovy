@@ -6,8 +6,8 @@ service {
     name "ScalarmSimulationManager"
     type "APP_SERVER"
     elastic true
-    numInstances 1
-    maxAllowedInstances 1
+    numInstances 3
+    maxAllowedInstances 3
     
     compute {
         template "SCALARM_LINUX"
@@ -27,6 +27,22 @@ service {
         }
         stopDetection {
             getSimulationManagerPids().isEmpty()
+        }
+    }
+    
+    // TODO: SSH open only for debug puropses
+    network {
+        port = 11300
+        protocolDescription = "SSH"
+        template "APPLICATION_NET"
+        accessRules {
+                incoming ([
+                        accessRule {
+                                type "PUBLIC"
+                                portRange 22
+                                target "0.0.0.0/0"
+                        }
+                ])
         }
     }
 }
